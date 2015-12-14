@@ -1,15 +1,11 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-author: "Matthew Pemble"
-date: "14 December 2015"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
+Matthew Pemble  
+14 December 2015  
 
 ## Loading and preprocessing the data
 
-```{r echo=TRUE}
+
+```r
 ## Initialise variables
 data.directory <- "data"
 datafile <- "activity.zip"
@@ -29,7 +25,6 @@ if (!file.exists(datafile))
 
 ## Then extract & subset to get the relevant data
 activity <- read.csv("data/activity.csv")
-
 ```
 
 
@@ -38,13 +33,47 @@ activity <- read.csv("data/activity.csv")
 
 ## What is mean total number of steps taken per day?
 
-```{r}
+
+```r
 require(dplyr)
+```
+
+```
+## Loading required package: dplyr
+## 
+## Attaching package: 'dplyr'
+## 
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
 day_activity <- group_by(activity, date)
 total_day <- summarize(day_activity,tot=sum(steps))
 hist(total_day$tot,breaks=10)
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+
+```r
 mean(total_day$tot,na.rm=TRUE)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(total_day$tot,na.rm=TRUE)
+```
+
+```
+## [1] 10765
 ```
 
 ## What is the average daily activity pattern?
