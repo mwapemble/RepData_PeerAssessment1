@@ -1,7 +1,7 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
 author: "Matthew Pemble"
-date: "14 December 2015"
+date: "20 December 2015"
 output: 
   html_document:
     keep_md: true
@@ -9,7 +9,11 @@ output:
 
 ## Loading and preprocessing the data
 
-```{r echo=TRUE}
+```{r initialisation, echo=TRUE}
+## Load relevant packages
+require(dplyr)
+require(lattice)
+
 ## Initialise variables
 data.directory <- "data"
 datafile <- "activity.zip"
@@ -31,20 +35,21 @@ if (!file.exists(datafile))
 
 ## Then extract & subset to get the relevant data
 activity <- read.csv("data/activity.csv")
-
+head(activity)
+summary(activity)
 ```
 
 ## What is mean total number of steps taken per day?
 
 ```{r mean_steps_day}
-require(dplyr)
 
 ## Calculate the total number of steps taken per day
 ## Group by date (no conversion needed) and then summarize as a total
 day_activity <- group_by(activity, date)
 total_day <- summarize(day_activity,total=sum(steps))
 
-## Make a histogram of the total number of steps taken each day, breaks is adjusted due to the large number of days involved.
+## Make a histogram of the total number of steps taken each day, 
+## breaks is adjusted due to the large number of days involved.
 hist(total_day$total,breaks=10,xlab="Steps", main="Steps per Day")
 
 ## Calculate and report the mean and median of the total number of steps taken per day
@@ -52,35 +57,43 @@ step_mean <- mean(total_day$total,na.rm=TRUE)
 step_median <- median(total_day$total,na.rm=TRUE)
 ```
 ### Report mean and median values.
-The mean value is `r round(step_mean,2)`.
-The median value is `r step_median`.
+The mean value is `r round(step_mean,2)` steps.  
+The median value is `r step_median` steps.
 
 ## What is the average daily activity pattern?
 
 ```{r average_steps_interval}
 
-## Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+## Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) 
+## and the average number of steps taken, averaged across all days (y-axis)
 ## Group by interval and then summarize with mean(steps), remembering to remove NAs.
 day_activity <- group_by(activity, interval)
 average_day <- summarize(day_activity, average=mean(steps, na.rm=TRUE))
+
 ## Make the line plot
 with (average_day,
-     plot(interval,average, type="l", main="Average Steps by Interval", xlab="5 Minute Interval", ylab="Steps"))
+     plot(interval,average, type="l", main="Average Steps by Interval", xlab="5 Minute Interval",
+          ylab="Steps"))
 
-## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+## Which 5-minute interval, on average across all the days in the dataset, 
+## contains the maximum number of steps?
 step_maximum <- average_day$interval[which.max(average_day$average)]
 ```
 ### Report interval with maximum number of steps, on average
-The interval with the greatest average number of steps is the `r step_maximum`'th interval.
+The interval with the greatest average number of steps is the `r step_maximum`th interval.
 
 ## Imputing missing values
 
 There are `r sum(is.na(activity$steps))` missing values in the activity data set.
 
 ### Devise a strategy for filling in all of the missing values in the dataset.
-The initial strategy selection was to replace the missing data with the median value (to limit the impact of outliers) for that section of the day.  
+The initial strategy selection was to replace the missing data with the median value 
+(to limit the impact of outliers) for that interval of the day.  
 
-It was noted that the first day (1 Oct 2012) was completely filled with NA values, therefore this day was excluded from the modified dataset. A more sophisticated analysis would have detected and similarly deleted any other days for which this condition applied.
+It was noted that the first day (1 Oct 2012) was completely filled with NA values, 
+therefore this day was excluded from the modified dataset. A more sophisticated 
+analysis would have detected and similarly deleted any other days for which this 
+condition applied.
 
 ```{r missing_values1}
 ## Create a new dataset that is equal to the original dataset but with the missing data filled in.
@@ -116,47 +129,71 @@ The median value is `r (step_median - mod_step_median)` lower than the estimate.
 
 ## What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-Because of the strategy selected for imputing missing data, the inserted values are significantly lower than the mean or median values.
+Because of the strategy (interval median) selected for imputing missing data, 
+the inserted values are significantly lower than the mean or median values.
 
-This would imply that there is a signficant impact from high-value outliers in the measured data (i.e. the mean values for intervals, as opposed to daily totals, are signficantly greater than the median.)  This could reflect different biases to daily activity patterns.
+The graph below shows that a range of values were included in the media set:
+```{r median-day}
+hist(median_day$average, main="Histogram of calculated median values", xlab="steps")
+```
+
+This would imply that there is a signficant impact from high-value outliers in 
+the measured data (i.e. the mean values for intervals  
+are signficantly greater than the median.)  This could reflect different biases 
+to daily activity patterns or daily activities varying considerably from interval
+to interval.
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r}
+```{r weekday_weekend}
 ## Create a new factor variable in the dataset with two levels – “weekday” and “weekend”
 ## indicating whether a given date is a weekday or weekend day.
-require(ggplot2)
-require(gridExtra)
+
 ## Generate additional column with day of week
-modified_activity$week <- weekdays(as.Date(modified_activity$date))
-modified_activity$week <- ifelse((modified_activity$week == "Saturday" | modified_activity$week == "Sunday"), "weekend", "week")
-modified_activity$week <- as.factor(modified_activity$week)
+modified_activity$day <- weekdays(as.Date(modified_activity$date))
 
-weekday <- modified_activity[modified_activity$week=="week",]
-weekend <- modified_activity[modified_activity$week=="weekend",]
+## Convert to "week" or "weekend" and then to factor
+modified_activity$day <- ifelse(
+     (modified_activity$day == "Saturday" | modified_activity$day == "Sunday"), "weekend",
+     "week")
+modified_activity$day <- as.factor(modified_activity$day)
 
-weekday <- group_by(weekday, interval)
-average_weekday <- summarize(weekday, average=mean(steps))
+## Generate the average steps grouped by interval and "week" or "weekend"
+modified_activity <- group_by(modified_activity, interval, day)
+average_activity <- summarize(modified_activity, average=mean(steps))
+average_activity$interval <- as.numeric(average_activity$interval)
 
-weekend <- group_by(weekend, interval)
-average_weekend <- summarize(weekend, average=mean(steps))
-## Make the line plot
-
-par(mfrow=c(2,1))
-with (average_weekday,
-     plot(interval,average, type="l", main="Weekday by Interval", xlab="", ylab="Steps"))
-with (average_weekend,
-     plot(interval,average, type="l", main="Weekday by Interval", xlab="5 Minute Interval", ylab="Steps"))
-
-## Two plots
-
-plot_weekday <- ggplot(average_weekday, aes(interval, average))
-plot_weekday <- plot_weekday + labs(title="weekday")
-plot_weekend <- ggplot(average_weekend, aes(interval, average))
-plot_weekend <- plot_weekend + labs(title="weekend")
-
-grid.arrange(plot_weekend,plot_weekday,nrow=2)
-
-## Close display
-dev.off()
+## Make a panel plot
+xyplot(
+     average ~ interval | day, 
+     data=average_activity, 
+     type="l", 
+     main="Average Steps per interval", 
+     ylab="Number of Steps",
+     xlab="",
+## Force it not to be side by side
+     layout = c(1,2))
 
 ```
+
+There are clear differences between the weekend and week activities:  
+
+- The weekday activity starts earlier.  
+- The peak weekday activity is higher.  
+- The overall level of weekend activity in the afternoons is higher than for the week days.
+- Weekend activity continues somewhat later.
+
+## Acknowledgements
+
+As usual, function and syntax tips were gained from a variety of sources, including the lecture notes and examples from the previous course material:  
+
+1. Books  
+    + Kabacoff, Robert; R in Action  
+    + Knell, Robert; Introductory R 
+    
+1. Websites  
+    + R4stats.com  
+    + blog.echen.me (particularly for ggplot2 - not used in the end)  
+    + stackoverflow.com  
+    + r-bloggers.com  
+    + rstudio.com (package instructions & markdown cheat sheet)  
+    + dummies.com (reminded me about the layout option for xyplot() )

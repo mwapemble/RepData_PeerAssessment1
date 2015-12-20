@@ -1,9 +1,36 @@
 # Reproducible Research: Peer Assessment 1
 Matthew Pemble  
-14 December 2015  
+20 December 2015  
 
 ## Loading and preprocessing the data
 
+
+```r
+## Load relevant packages
+require(dplyr)
+```
+
+```
+## Loading required package: dplyr
+## 
+## Attaching package: 'dplyr'
+## 
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
+require(lattice)
+```
+
+```
+## Loading required package: lattice
+```
 
 ```r
 ## Initialise variables
@@ -27,28 +54,36 @@ if (!file.exists(datafile))
 
 ## Then extract & subset to get the relevant data
 activity <- read.csv("data/activity.csv")
+head(activity)
+```
+
+```
+##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25
+```
+
+```r
+summary(activity)
+```
+
+```
+##      steps                 date          interval      
+##  Min.   :  0.000   2012-10-01:  288   Min.   :   0.00  
+##  1st Qu.:  0.000   2012-10-02:  288   1st Qu.: 588.75  
+##  Median :  0.000   2012-10-03:  288   Median :1177.50  
+##  Mean   : 37.383   2012-10-04:  288   Mean   :1177.50  
+##  3rd Qu.: 12.000   2012-10-05:  288   3rd Qu.:1766.25  
+##  Max.   :806.000   2012-10-06:  288   Max.   :2355.00  
+##  NA's   :2304      (Other)   :15840
 ```
 
 ## What is mean total number of steps taken per day?
 
-
-```r
-require(dplyr)
-```
-
-```
-## Loading required package: dplyr
-## 
-## Attaching package: 'dplyr'
-## 
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-## 
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
 
 ```r
 ## Calculate the total number of steps taken per day
@@ -56,7 +91,8 @@ require(dplyr)
 day_activity <- group_by(activity, date)
 total_day <- summarize(day_activity,total=sum(steps))
 
-## Make a histogram of the total number of steps taken each day, breaks is adjusted due to the large number of days involved.
+## Make a histogram of the total number of steps taken each day, 
+## breaks is adjusted due to the large number of days involved.
 hist(total_day$total,breaks=10,xlab="Steps", main="Steps per Day")
 ```
 
@@ -68,39 +104,47 @@ step_mean <- mean(total_day$total,na.rm=TRUE)
 step_median <- median(total_day$total,na.rm=TRUE)
 ```
 ### Report mean and median values.
-The mean value is 10766.19.
-The median value is 10765.
+The mean value is 10766.19 steps.  
+The median value is 10765 steps.
 
 ## What is the average daily activity pattern?
 
 
 ```r
-## Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+## Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) 
+## and the average number of steps taken, averaged across all days (y-axis)
 ## Group by interval and then summarize with mean(steps), remembering to remove NAs.
 day_activity <- group_by(activity, interval)
 average_day <- summarize(day_activity, average=mean(steps, na.rm=TRUE))
+
 ## Make the line plot
 with (average_day,
-     plot(interval,average, type="l", main="Average Steps by Interval", xlab="5 Minute Interval", ylab="Steps"))
+     plot(interval,average, type="l", main="Average Steps by Interval", xlab="5 Minute Interval",
+          ylab="Steps"))
 ```
 
 ![](PA1_template_files/figure-html/average_steps_interval-1.png) 
 
 ```r
-## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+## Which 5-minute interval, on average across all the days in the dataset, 
+## contains the maximum number of steps?
 step_maximum <- average_day$interval[which.max(average_day$average)]
 ```
 ### Report interval with maximum number of steps, on average
-The interval with the greatest average number of steps is the 835'th interval.
+The interval with the greatest average number of steps is the 835th interval.
 
 ## Imputing missing values
 
 There are 2304 missing values in the activity data set.
 
 ### Devise a strategy for filling in all of the missing values in the dataset.
-The initial strategy selection was to replace the missing data with the median value (to limit the impact of outliers) for that section of the day.  
+The initial strategy selection was to replace the missing data with the median value 
+(to limit the impact of outliers) for that interval of the day.  
 
-It was noted that the first day (1 Oct 2012) was completely filled with NA values, therefore this day was excluded from the modified dataset. A more sophisticated analysis would have detected and similarly deleted any other days for which this condition applied.
+It was noted that the first day (1 Oct 2012) was completely filled with NA values, 
+therefore this day was excluded from the modified dataset. A more sophisticated 
+analysis would have detected and similarly deleted any other days for which this 
+condition applied.
 
 
 ```r
@@ -141,9 +185,22 @@ The median value is 348 lower than the estimate.
 
 ## What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-Because of the strategy selected for imputing missing data, the inserted values are significantly lower than the mean or median values.
+Because of the strategy (interval median) selected for imputing missing data, 
+the inserted values are significantly lower than the mean or median values.
 
-This would imply that there is a signficant impact from high-value outliers in the measured data (i.e. the mean values for intervals, as opposed to daily totals, are signficantly greater than the median.)  This could reflect different biases to daily activity patterns.
+The graph below shows that a range of values were included in the media set:
+
+```r
+hist(median_day$average, main="Histogram of calculated median values", xlab="steps")
+```
+
+![](PA1_template_files/figure-html/median-day-1.png) 
+
+This would imply that there is a signficant impact from high-value outliers in 
+the measured data (i.e. the mean values for intervals  
+are signficantly greater than the median.)  This could reflect different biases 
+to daily activity patterns or daily activities varying considerably from interval
+to interval.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
@@ -152,25 +209,52 @@ This would imply that there is a signficant impact from high-value outliers in t
 ## indicating whether a given date is a weekday or weekend day.
 
 ## Generate additional column with day of week
-modified_activity$week <- weekdays(as.Date(modified_activity$date))
-modified_activity$week <- ifelse((modified_activity$week == "Saturday" | modified_activity$week == "Sunday"), "weekend", "week")
-modified_activity$week <- as.factor(modified_activity$week)
+modified_activity$day <- weekdays(as.Date(modified_activity$date))
 
-weekday <- modified_activity[modified_activity$week=="week",]
-weekend <- modified_activity[modified_activity$week=="weekend",]
+## Convert to "week" or "weekend" and then to factor
+modified_activity$day <- ifelse(
+     (modified_activity$day == "Saturday" | modified_activity$day == "Sunday"), "weekend",
+     "week")
+modified_activity$day <- as.factor(modified_activity$day)
 
-weekday <- group_by(weekday, interval)
-average_weekday <- summarize(weekday, average=mean(steps))
+## Generate the average steps grouped by interval and "week" or "weekend"
+modified_activity <- group_by(modified_activity, interval, day)
+average_activity <- summarize(modified_activity, average=mean(steps))
+average_activity$interval <- as.numeric(average_activity$interval)
 
-weekend <- group_by(weekend, interval)
-average_weekend <- summarize(weekend, average=mean(steps))
-## Make the line plot
-
-par(mfrow=c(2,1))
-with (average_weekday,
-     plot(interval,average, type="l", main="Weekday by Interval", xlab="", ylab="Steps"))
-with (average_weekend,
-     plot(interval,average, type="l", main="Weekday by Interval", xlab="5 Minute Interval", ylab="Steps"))
+## Make a panel plot
+xyplot(
+     average ~ interval | day, 
+     data=average_activity, 
+     type="l", 
+     main="Average Steps per interval", 
+     ylab="Number of Steps",
+     xlab="",
+## Force it not to be side by side
+     layout = c(1,2))
 ```
 
-![](PA1_template_files/figure-html/unnamed-chunk-2-1.png) 
+![](PA1_template_files/figure-html/weekday_weekend-1.png) 
+
+There are clear differences between the weekend and week activities:  
+
+- The weekday activity starts earlier.  
+- The peak weekday activity is higher.  
+- The overall level of weekend activity in the afternoons is higher than for the week days.
+- Weekend activity continues somewhat later.
+
+## Acknowledgements
+
+As usual, function and syntax tips were gained from a variety of sources, including the lecture notes and examples from the previous course material:  
+
+1. Books  
+    + Kabacoff, Robert; R in Action  
+    + Knell, Robert; Introductory R 
+    
+1. Websites  
+    + R4stats.com  
+    + blog.echen.me (particularly for ggplot2 - not used in the end)  
+    + stackoverflow.com  
+    + r-bloggers.com  
+    + rstudio.com (package instructions & markdown cheat sheet)  
+    + dummies.com (reminded me about the layout option for xyplot() )
