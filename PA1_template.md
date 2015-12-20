@@ -68,6 +68,20 @@ head(activity)
 ```
 
 ```r
+tail(activity)
+```
+
+```
+##       steps       date interval
+## 17563    NA 2012-11-30     2330
+## 17564    NA 2012-11-30     2335
+## 17565    NA 2012-11-30     2340
+## 17566    NA 2012-11-30     2345
+## 17567    NA 2012-11-30     2350
+## 17568    NA 2012-11-30     2355
+```
+
+```r
 summary(activity)
 ```
 
@@ -134,30 +148,27 @@ step_maximum <- average_day$interval[which.max(average_day$average)]
 The interval with the greatest average number of steps is the 835th interval.
 
 ## Imputing missing values
+### Calculate and report the total number of missing values in the dataset
 
+```r
+missing_values <- sum(is.na(activity$steps))
+```
 There are 2304 missing values in the activity data set.
 
 ### Devise a strategy for filling in all of the missing values in the dataset.
 The initial strategy selection was to replace the missing data with the median value 
 (to limit the impact of outliers) for that interval of the day.  
 
-It was noted that the first day (1 Oct 2012) was completely filled with NA values, 
-therefore this day was excluded from the modified dataset. A more sophisticated 
-analysis would have detected and similarly deleted any other days for which this 
-condition applied.
-
 
 ```r
 ## Create a new dataset that is equal to the original dataset but with the missing data filled in.
-## Create new dataset without Day 1
-modified_activity <- filter(activity, date != "2012-10-01")
-modified_activity$interval <- as.factor(modified_activity$interval)
 
 ## Create dataset with median activity values
 day_activity <- group_by(activity, interval)
 median_day <- summarize(day_activity, average=median(steps, na.rm=TRUE))
 
-## Modify the new dataset
+## Create a new dataset with NA values replaced by median
+modified_activity <- activity
 modified_activity[is.na(modified_activity$steps),"steps"] <- median_day$average
 
 ## Make a histogram of the total number of steps taken each day (copied from the first part)
@@ -176,17 +187,26 @@ mod_step_mean <- mean(mod_total_day$total)
 mod_step_median <- median(mod_total_day$total)
 ```
 ### Report mean and median values for the modified data.
-The mean value is 9643.25.
-The median value is 10417.
+The mean value is 9503.87.
+The median value is 10395.
 
 ### Do these values differ from the estimates from the first part of the assignment? 
-The mean value is 1122.94 lower than the estimate.
-The median value is 348 lower than the estimate.
+The mean value is 1262.32 lower than the estimate.
+The median value is 370 lower than the estimate.
 
 ## What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 Because of the strategy (interval median) selected for imputing missing data, 
 the inserted values are significantly lower than the mean or median values.
+
+```r
+summary(median_day$average)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  0.0000  0.0000  0.0000  3.9618  0.0000 60.0000
+```
 
 The graph below shows that a range of values were included in the media set:
 
@@ -194,7 +214,7 @@ The graph below shows that a range of values were included in the media set:
 hist(median_day$average, main="Histogram of calculated median values", xlab="steps")
 ```
 
-![](PA1_template_files/figure-html/median-day-1.png) 
+![](PA1_template_files/figure-html/median-day2-1.png) 
 
 This would imply that there is a signficant impact from high-value outliers in 
 the measured data (i.e. the mean values for intervals  
